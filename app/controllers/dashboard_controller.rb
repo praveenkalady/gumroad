@@ -13,6 +13,11 @@ class DashboardController < Sellers::BaseController
     else
       presenter = CreatorHomePresenter.new(pundit_user)
       @creator_home_props = presenter.creator_home_props
+      
+      respond_to do |format|
+        format.html # Regular HTML response
+        format.json { render json: @creator_home_props } # JSON for SPA
+      end
     end
   end
 
@@ -42,6 +47,17 @@ class DashboardController < Sellers::BaseController
 
     revenue = current_seller.monthly_recurring_revenue
     render json: { success: true, value: formatted_dollar_amount(revenue) }
+  end
+
+  def spa
+    authorize :dashboard
+    
+    if current_seller.suspended_for_tos_violation?
+      redirect_to products_url
+    else
+      presenter = CreatorHomePresenter.new(pundit_user)
+      @creator_home_props = presenter.creator_home_props
+    end
   end
 
   def download_tax_form
