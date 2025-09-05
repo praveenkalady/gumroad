@@ -5,8 +5,8 @@ require "shared_examples/authorized_oauth_v1_api_method"
 
 describe Api::V2::PayoutsController do
   before do
-    stub_const("ObfuscateIds::CIPHER_KEY", "a" * 32)
-    stub_const("ObfuscateIds::NUMERIC_CIPHER_KEY", 123456789)
+    allow(ObfuscateIds).to receive(:cipher_key).and_return("a" * 32)
+    allow(ObfuscateIds).to receive(:numeric_cipher_key).and_return(123456789)
 
     @seller = create(:user)
     @other_seller = create(:user)
