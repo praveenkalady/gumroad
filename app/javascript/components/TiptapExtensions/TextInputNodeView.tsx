@@ -26,12 +26,10 @@ export const TextInputNodeView = ({ editor, node, updateAttributes }: NodeViewPr
               className="border-0"
               style={{
                 background: "none",
-                padding: 0,
                 margin: 0,
                 font: "inherit",
                 color: "inherit",
                 outline: "none",
-                borderRadius: 0,
               }}
             />
             {type === "shortAnswer" ? <input {...sharedProps} /> : <textarea {...sharedProps} />}
