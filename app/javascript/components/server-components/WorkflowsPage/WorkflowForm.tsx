@@ -422,7 +422,7 @@ const WorkflowForm = () => {
               )}
             </div>
             {wasPublishedPreviously || formState.trigger === "abandoned_cart" ? null : (
-              <label>
+              <label className="items-center">
                 <input
                   type="checkbox"
                   checked={formState.sendToPastCustomers}
