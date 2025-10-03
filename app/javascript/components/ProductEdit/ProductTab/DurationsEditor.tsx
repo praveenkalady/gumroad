@@ -8,6 +8,7 @@ import { PriceInput } from "$app/components/PriceInput";
 import { Duration, useProductEditContext } from "$app/components/ProductEdit/state";
 import { Drawer, ReorderingHandle, SortableList } from "$app/components/SortableList";
 import { WithTooltip } from "$app/components/WithTooltip";
+import cx from "classnames";
 
 let newDurationId = 0;
 
@@ -169,7 +170,7 @@ const DurationEditor = ({
               onChange={(evt) => updateDuration({ description: evt.target.value })}
             />
           </fieldset>
-          <section style={{ display: "grid", gap: "var(--spacer-5)", gridAutoFlow: "column", alignItems: "flex-end" }}>
+          <section className={cx("grid", "gap-[var(--spacer-5)]", "grid-flow-col", "items-end")}>
             <fieldset>
               <label htmlFor={`${uid}-price`}>Additional amount</label>
               <PriceInput
