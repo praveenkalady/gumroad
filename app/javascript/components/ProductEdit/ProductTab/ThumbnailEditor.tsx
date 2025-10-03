@@ -10,6 +10,7 @@ import { assertResponseError } from "$app/utils/request";
 
 import { ImageUploader } from "$app/components/ImageUploader";
 import { showAlert } from "$app/components/server-components/Alert";
+import cx from "classnames";
 
 const nativeTypeThumbnails = require.context("$assets/images/native_types/thumbnails/");
 
@@ -74,7 +75,7 @@ export const ThumbnailEditor = ({
 
   return (
     <section className="!p-4 md:!p-8">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className={cx("flex", "justify-between", "items-center")}>
         <h2>Thumbnail</h2>
         <a href="/help/article/60-adding-a-cover-image" target="_blank" rel="noreferrer">
           Learn more
