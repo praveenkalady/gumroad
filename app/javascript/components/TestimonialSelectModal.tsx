@@ -9,6 +9,7 @@ import { Modal } from "$app/components/Modal";
 import { PaginationProps } from "$app/components/Pagination";
 import { Review } from "$app/components/Review";
 import { showAlert } from "$app/components/server-components/Alert";
+import cx from "classnames";
 
 export const TestimonialSelectModal = ({
   isOpen,
@@ -129,7 +130,7 @@ export const TestimonialSelectModal = ({
               />
               <p>Select all</p>
             </div>
-            <section className="paragraphs" style={{ marginTop: "var(--spacer-2)" }}>
+            <section className={cx("paragraphs", "mt-[var(--spacer-2)]")}>
               {state.reviews.map((review) => (
                 <SelectableReviewCard
                   key={review.id}
