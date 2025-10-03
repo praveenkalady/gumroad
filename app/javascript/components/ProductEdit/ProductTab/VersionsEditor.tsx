@@ -10,6 +10,7 @@ import { Version, useProductEditContext } from "$app/components/ProductEdit/stat
 import { Drawer, ReorderingHandle, SortableList } from "$app/components/SortableList";
 import { Toggle } from "$app/components/Toggle";
 import { WithTooltip } from "$app/components/WithTooltip";
+import cx from "classnames";
 
 let newVersionId = 0;
 
@@ -170,7 +171,7 @@ const VersionEditor = ({
               onChange={(evt) => updateVersion({ description: evt.target.value })}
             />
           </fieldset>
-          <section style={{ display: "grid", gap: "var(--spacer-5)", gridAutoFlow: "column", alignItems: "flex-end" }}>
+          <section className={cx("grid", "gap-[var(--spacer-5)]", "grid-flow-col", "items-end")}>
             <fieldset>
               <label htmlFor={`${uid}-price`}>Additional amount</label>
               <PriceInput
