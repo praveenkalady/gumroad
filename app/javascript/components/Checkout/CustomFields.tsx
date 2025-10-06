@@ -43,7 +43,7 @@ const CustomField = ({ field, fieldKey }: { field: CustomFieldDescriptor; fieldK
               onChange={(e) =>
                 dispatch({ type: "set-custom-field", key: fieldKey, value: e.target.checked ? "true" : "" })
               }
-              className={cx("m-0")}
+              className="m-0"
               disabled={isProcessing(state)}
             />
             {field.required ? field.name : `${field.name} (optional)`}
@@ -62,7 +62,7 @@ const CustomField = ({ field, fieldKey }: { field: CustomFieldDescriptor; fieldK
               onChange={(e) =>
                 dispatch({ type: "set-custom-field", key: fieldKey, value: e.target.checked ? "true" : "" })
               }
-              className={cx("m-0")}
+              className="m-0"
               disabled={isProcessing(state)}
             />
             I accept
