@@ -169,7 +169,7 @@ const DurationEditor = ({
               onChange={(evt) => updateDuration({ description: evt.target.value })}
             />
           </fieldset>
-          <section className="grid grid-flow-col items-end gap-[var(--spacer-5)]">
+          <section className="!grid grid-flow-col items-end gap-6">
             <fieldset>
               <label htmlFor={`${uid}-price`}>Additional amount</label>
               <PriceInput
