@@ -129,7 +129,7 @@ export const TestimonialSelectModal = ({
               />
               <p>Select all</p>
             </div>
-            <section className="paragraphs mt-[var(--spacer-2)]">
+            <section className="paragraphs mt-2">
               {state.reviews.map((review) => (
                 <SelectableReviewCard
                   key={review.id}
