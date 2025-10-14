@@ -60,7 +60,7 @@ export const PriceTag = ({
     <div itemScope itemProp="offers" itemType="https://schema.org/Offer" className="flex items-center">
       <div className={`has-tooltip ${tooltipPosition}`} aria-describedby={tooltipUid}>
         <div
-          className="price"
+          className="relative block overflow-hidden text-ellipsis whitespace-nowrap border border-r-0 border-border bg-gradient-to-l from-transparent from-[1em] to-accent to-[1em] bg-no-repeat py-1 pl-2 pr-[calc(0.5rem+1em)] text-[rgb(var(--contrast-accent))] before:pointer-events-none before:absolute before:bottom-0 before:right-0 before:top-0 before:border-[length:calc(0.25rem+0.5lh)_0_calc(0.25rem+0.5lh)_calc(0.0625rem)] before:border-solid before:border-border before:border-r-[length:1em] before:border-r-transparent before:content-[''] after:pointer-events-none after:absolute after:bottom-0 after:right-[0.0625rem] after:top-0 after:border-[length:calc(0.25rem+0.5lh)_0] after:border-l-0 after:border-r-[length:1em] after:border-solid after:border-accent after:border-r-transparent after:content-['']"
           itemProp="price"
           content={formatPriceCentsWithoutCurrencySymbolAndComma(currencyCode, price)}
         >
