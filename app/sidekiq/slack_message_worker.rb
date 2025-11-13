@@ -6,6 +6,7 @@ class SlackMessageWorker
 
   SLACK_MESSAGE_SEND_TIMEOUT = 5.seconds
   SLACK_WEBHOOK_URL = GlobalConfig.get("SLACK_WEBHOOK_URL")
+  SKIP_SLACK_NOTIFICATIONS_FEATURE = :skip_slack_notifications
 
   ##
   # Creates a Slack message in a given channel
@@ -27,6 +28,10 @@ class SlackMessageWorker
     chat_room = CHAT_ROOMS[room_name.to_sym][:slack]
     return if chat_room.nil?
 
+    send_email_copy(room_name, sender, message_text, options)
+
+    return if Feature.active?(SKIP_SLACK_NOTIFICATIONS_FEATURE)
+
     hex_color = Color::CSS[color].html
 
     Timeout.timeout(SLACK_MESSAGE_SEND_TIMEOUT) do
@@ -46,6 +51,25 @@ class SlackMessageWorker
     unless e.message.include? "rate_limited"
       raise SlackError, e.message
     end
+  end
+
+  private
+
+  def send_email_copy(room_name, sender, message_text, options)
+    attachments = options.fetch("attachments", [])
+
+    mail = SlackNotificationsMailer.notification(
+      room_name:,
+      sender:,
+      message_text:,
+      attachments:
+    )
+
+    return if mail.nil?
+
+    mail.deliver_now
+  rescue StandardError => e
+    Rails.logger.error("Failed to send Slack notification email copy: #{e.class}: #{e.message}")
   end
 end
 

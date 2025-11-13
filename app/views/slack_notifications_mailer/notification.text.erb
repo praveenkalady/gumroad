@@ -1,0 +1,14 @@
+Room: <%= @room_name %>
+Sender: <%= @sender %>
+
+Message:
+<%= @message_text.presence || "(no message text)" %>
+
+<% if @attachments.present? %>
+Attachments:
+<% @attachments.each_with_index do |attachment, index| %>
+Attachment <%= index + 1 %>:
+<%= attachment.to_json %>
+
+<% end %>
+<% end %>
