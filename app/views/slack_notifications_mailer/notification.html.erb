@@ -1,0 +1,35 @@
+<%= header_section("Slack Notification", "from #{@room_name.titleize} (#{@sender})") %>
+<div>
+  <p>
+    <%= simple_format(@message_text.presence || "(no message text)") %>
+  </p>
+
+  <% if @attachments.present? %>
+    <p><strong>Attachments:</strong></p>
+    <ul>
+      <% @attachments.each do |attachment| %>
+        <li>
+          <% if attachment.is_a?(Hash) %>
+            <% title = attachment["title"] || attachment[:title] %>
+            <% text = attachment["text"] || attachment[:text] %>
+            <% url = attachment["url"] || attachment[:url] || attachment["title_link"] || attachment[:title_link] %>
+            <% if title.present? && url.present? %>
+              <%= link_to title, url, target: "_blank", rel: "noopener noreferrer" %>
+            <% elsif title.present? %>
+              <strong><%= title %></strong>
+            <% elsif url.present? %>
+              <%= link_to url, url, target: "_blank", rel: "noopener noreferrer" %>
+            <% end %>
+            <% if text.present? %>
+              <div style="margin-top: 0.5rem;">
+                <%= simple_format(text) %>
+              </div>
+            <% end %>
+          <% else %>
+            <%= attachment.to_json %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>
