@@ -32,7 +32,7 @@ class AudienceController < Sellers::BaseController
     # Use defaults if parsing failed or params not present
     if start_date.nil? || end_date.nil?
       end_date = DateTime.current.to_date
-      start_date = end_date - 30.days
+      start_date = end_date - 29.days
     end
 
     @audience_data = CreatorAnalytics::Following.new(current_seller).by_date(start_date: start_date, end_date: end_date)

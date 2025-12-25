@@ -144,10 +144,10 @@ describe AnalyticsController do
     end
 
     describe "when start_time or end_time is invalid" do
-      it "gets analytics stats range from 30 days ago to today" do
+      it "gets analytics stats range from 29 days ago to today" do
         now = DateTime.current
         allow(Date).to receive(:now).and_return(now)
-        expected_start_time = now.to_date - 30.days
+        expected_start_time = now.to_date.ago(29.days)
         expected_end_time = now.to_date
         expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :referral).and_call_original
         expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :state).and_call_original

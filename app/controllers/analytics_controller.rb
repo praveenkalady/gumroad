@@ -31,7 +31,7 @@ class AnalyticsController < Sellers::BaseController
     # Use defaults if parsing failed or params not present
     if start_date.nil? || end_date.nil?
       end_date = DateTime.current.to_date
-      start_date = end_date - 30.days
+      start_date = end_date - 29.days
     end
 
 
