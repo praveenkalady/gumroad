@@ -8,7 +8,7 @@ import { InertiaAnalyticsLayout } from "$app/components/Analytics/InertiaAnalyti
 import { useAnalyticsDateRange } from "$app/components/Analytics/useAnalyticsDateRange";
 import { AudienceChart } from "$app/components/Audience/AudienceChart";
 import { AudienceQuickStats } from "$app/components/Audience/AudienceQuickStats";
-import { Button, NavigationButton } from "$app/components/Button";
+import { Button } from "$app/components/Button";
 import { DateRangePicker } from "$app/components/DateRangePicker";
 import { ExportSubscribersPopover } from "$app/components/Followers/ExportSubscribersPopover";
 import { Icon } from "$app/components/Icons";
@@ -22,10 +22,8 @@ import placeholder from "$assets/images/placeholders/audience.png";
 
 export const AudiencePage = ({
   total_follower_count,
-  profile_url,
 }: {
-  total_follower_count: number;
-  profile_url: string;
+  total_follower_count: number,
 }) => {
   const dateRange = useAnalyticsDateRange();
   const [data, setData] = React.useState<AudienceDataByDate | null>(null);
@@ -98,14 +96,9 @@ export const AudiencePage = ({
               You don't have any followers yet. Once you do, you'll see them here, along with powerful data that can
               help you keep your growing audience engaged.
             </p>
-            <div className="flex gap-4 items-center">
-              <NavigationButton href={profile_url} target="_blank" color="accent">
-                Share your profile <Icon name="link" />
-              </NavigationButton>
-              <NavigationButton href="https://help.gumroad.com/article/185-audience" target="_blank" rel="noreferrer">
-                Learn more
-              </NavigationButton>
-            </div>
+            <a href="/help/article/185-audience" target="_blank" rel="noreferrer">
+              Learn more
+            </a>
           </Placeholder>
         </div>
       )}

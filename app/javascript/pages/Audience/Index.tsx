@@ -1,6 +1,5 @@
 import { usePage } from "@inertiajs/react";
 import React from "react";
-import { cast } from "ts-safe-cast";
 
 import { AudiencePage } from "$app/components/server-components/AudiencePage";
 
@@ -10,9 +9,9 @@ interface AudienceIndexProps {
 }
 
 const Index = () => {
-  const { total_follower_count, profile_url } = usePage<AudienceIndexProps>().props;
+  const { total_follower_count } = usePage<AudienceIndexProps>().props;
 
-  return <AudiencePage total_follower_count={total_follower_count} profile_url={cast<string>(profile_url)} />;
+  return <AudiencePage total_follower_count={total_follower_count} />;
 };
 
 export default Index;
