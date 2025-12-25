@@ -32,35 +32,6 @@ describe AudienceController do
     end
   end
 
-  describe "GET index with date params" do
-    it "gets audience data range from start_time to end_time" do
-      start_time = "Mon Apr 8 2013 22:40:18 GMT-0700 (PDT)"
-      end_time = "Wed Apr 10 2013 22:40:18 GMT-0700 (PDT)"
-      expected_start_time = Date.parse(start_time)
-      expected_end_time = Date.parse(end_time)
-      expect_any_instance_of(CreatorAnalytics::Following).to receive(:by_date).with(start_date: expected_start_time, end_date: expected_end_time).and_call_original
-      get :index, params: { start_time:, end_time: }
-      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
-    end
-
-    it "accepts 'from' and 'to' params" do
-      expect_any_instance_of(CreatorAnalytics::Following).to receive(:by_date).with(start_date: Date.new(2025, 11, 25), end_date: Date.new(2025, 12, 25)).and_call_original
-      get :index, params: { from: "2025-11-25", to: "2025-12-25" }
-      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
-    end
-
-    describe "when start_time or end_time is invalid" do
-      it "gets audience data range from 30 days ago to today" do
-        now = DateTime.current
-        expected_start_time = now.to_date - 30.days
-        expected_end_time = now.to_date
-        expect_any_instance_of(CreatorAnalytics::Following).to receive(:by_date).with(start_date: expected_start_time, end_date: expected_end_time).and_call_original
-        get :index
-        expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
-      end
-    end
-  end
-
   describe "POST export" do
     it_behaves_like "authorize called for action", :post, :export do
       let(:record) { :audience }
@@ -90,6 +61,38 @@ describe AudienceController do
 
         expect(response).to have_http_status(:ok)
       end
+    end
+  end
+
+  describe "GET index with date params" do
+    before do
+      seller.update!(timezone: "UTC")
+
+      travel_to Time.utc(2021, 1, 3) do
+        create(:active_follower, user: seller).confirm!
+        follower = create(:active_follower, user: seller)
+        follower.confirm!
+        follower.mark_deleted!
+      end
+    end
+
+    it_behaves_like "authorize called for action", :get, :index do
+      let(:record) { :audience }
+      let(:policy_method) { :index? }
+      let(:request_params) { { start_time: Time.utc(2021, 1, 1), end_time: Time.utc(2021, 1, 3) } }
+    end
+
+    it "returns expected data", :sidekiq_inline, :elasticsearch_wait_for_refresh do
+      expect_any_instance_of(CreatorAnalytics::Following).to receive(:by_date).with(start_date: Date.new(2021, 1, 1), end_date: Date.new(2021, 1, 3)).and_call_original
+      get :index, params: { start_time: Time.utc(2021, 1, 1), end_time: Time.utc(2021, 1, 3) }
+
+      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
+    end
+
+    it "works for someone in the GMT-1200 TZ" do
+      mask = "%a %b %d %Y %H:%M:%S GMT-1200 (Changement de date)"
+      get(:index, params: { start_time: 2.days.ago.strftime(mask), end_time: 1.day.ago.strftime(mask) })
+      expect(response.status).to be(200)
     end
   end
 

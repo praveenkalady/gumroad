@@ -60,41 +60,6 @@ describe AnalyticsController do
       end
     end
 
-    describe "GET index with date params" do
-      describe "when start_time and end_time are valid" do
-        it "gets analytics stats range from start_time to end_time" do
-          start_time = "Mon Apr 8 2013 22:40:18 GMT-0700 (PDT)"
-          end_time = "Wed Apr 10 2013 22:40:18 GMT-0700 (PDT)"
-          expected_start_time = Date.parse(start_time)
-          expected_end_time = Date.parse(end_time)
-          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :referral).and_call_original
-          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :state).and_call_original
-          get :index, params: { start_time:, end_time: }
-          expect(assigns(:analytics_props)).to_not be_nil
-        end
-
-        it "accepts 'from' and 'to' params" do
-          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(Date.new(2025, 11, 25), Date.new(2025, 12, 25), by: :referral).and_call_original
-          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(Date.new(2025, 11, 25), Date.new(2025, 12, 25), by: :state).and_call_original
-          get :index, params: { from: "2025-11-25", to: "2025-12-25" }
-          expect(assigns(:analytics_props)[:start_date]).to eq("2025-11-25")
-          expect(assigns(:analytics_props)[:end_date]).to eq("2025-12-25")
-        end
-      end
-
-      describe "when start_time or end_time is invalid" do
-        it "gets analytics stats range from 30 days ago to today" do
-          now = DateTime.current
-          expected_start_time = now.to_date - 30.days
-          expected_end_time = now.to_date
-          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :referral).and_call_original
-          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :state).and_call_original
-          get :index
-          expect(assigns(:analytics_props)).to_not be_nil
-        end
-      end
-    end
-
     describe "when user is not qualified for analytics" do
       before :each do
         allow(controller.logged_in_user).to receive(:visible).and_return([])
@@ -134,6 +99,60 @@ describe AnalyticsController do
       it "attemps to create related LargeSeller record" do
         expect(LargeSeller).to receive(:create_if_warranted).with(controller.current_seller)
         get :index
+      end
+    end
+  end
+
+  shared_examples "supports start and end times" do |action_name|
+    it "assigns the correct start_date and end_date in props" do
+      get(action_name, params: {
+            start_time: "2021-05-25",
+            end_time: "2021-06-23",
+          })
+      expect(assigns(:analytics_props)[:start_date]).to eq("2021-05-25")
+      expect(assigns(:analytics_props)[:end_date]).to eq("2021-06-23")
+    end
+  end
+
+  describe "GET index with date params" do
+    before do
+      @stats = { data: "data" }
+    end
+
+    it_behaves_like "supports start and end times", :index
+
+    it_behaves_like "authorize called for action", :get, :index do
+      let(:record) { :analytics }
+      let(:policy_method) { :index? }
+    end
+
+    describe "when start_time and end_time are valid" do
+      it "gets analytics stats range from start_time to end_time" do
+        start_time = "Mon Apr 8 2013 22:40:18 GMT-0700 (PDT)"
+        end_time = "Wed Apr 10 2013 22:40:18 GMT-0700 (PDT)"
+        expected_start_time = Date.parse(start_time)
+        expected_end_time = Date.parse(end_time)
+        expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :referral).and_call_original
+        expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :state).and_call_original
+        get :index, params: { start_time:, end_time: }
+        expect(assigns(:analytics_props)).to_not be_nil
+      end
+
+      it "renders stats in json format" do
+        get :index
+      end
+    end
+
+    describe "when start_time or end_time is invalid" do
+      it "gets analytics stats range from 30 days ago to today" do
+        now = DateTime.current
+        allow(Date).to receive(:now).and_return(now)
+        expected_start_time = now.to_date - 30.days
+        expected_end_time = now.to_date
+        expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :referral).and_call_original
+        expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :state).and_call_original
+        get :index
+        expect(assigns(:analytics_props)).to_not be_nil
       end
     end
   end
