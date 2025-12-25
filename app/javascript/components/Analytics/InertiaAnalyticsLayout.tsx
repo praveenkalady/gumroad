@@ -23,12 +23,12 @@ export const InertiaAnalyticsLayout = ({
       <PageHeader title="Analytics" actions={actions}>
         <Tabs>
           <Tab isSelected={selectedTab === "following"} asChild>
-            <Link href={Routes.audience_dashboard_path()} className="no-underline" prefetch>
+            <Link href={Routes.audience_dashboard_path()} className="no-underline">
               Following
             </Link>
           </Tab>
           <Tab isSelected={selectedTab === "sales"} asChild>
-            <Link href={Routes.sales_dashboard_path()} className="no-underline" prefetch>
+            <Link href={Routes.sales_dashboard_path()} className="no-underline">
               Sales
             </Link>
           </Tab>
