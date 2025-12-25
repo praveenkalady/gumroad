@@ -9,7 +9,8 @@ module InertiaRendering
       RenderingExtension.custom_context(view_context).merge(
         authenticity_token: form_authenticity_token,
         flash: inertia_flash_props,
-        title: @title
+        title: @title,
+        href: request.original_url
       )
     end
 

@@ -1,16 +1,14 @@
-import { lightFormat } from "date-fns";
+import { format as lightFormat } from "date-fns";
 import * as React from "react";
-import { createCast } from "ts-safe-cast";
 
 import { AudienceDataByDate, fetchAudienceDataByDate } from "$app/data/audience";
 import { AbortError } from "$app/utils/request";
-import { register } from "$app/utils/serverComponentUtil";
 
-import { AnalyticsLayout } from "$app/components/Analytics/AnalyticsLayout";
+import { InertiaAnalyticsLayout } from "$app/components/Analytics/InertiaAnalyticsLayout";
 import { useAnalyticsDateRange } from "$app/components/Analytics/useAnalyticsDateRange";
 import { AudienceChart } from "$app/components/Audience/AudienceChart";
 import { AudienceQuickStats } from "$app/components/Audience/AudienceQuickStats";
-import { Button } from "$app/components/Button";
+import { Button, NavigationButton } from "$app/components/Button";
 import { DateRangePicker } from "$app/components/DateRangePicker";
 import { ExportSubscribersPopover } from "$app/components/Followers/ExportSubscribersPopover";
 import { Icon } from "$app/components/Icons";
@@ -22,12 +20,17 @@ import { WithTooltip } from "$app/components/WithTooltip";
 
 import placeholder from "$assets/images/placeholders/audience.png";
 
-const AudiencePage = ({ total_follower_count }: { total_follower_count: number }) => {
+export const AudiencePage = ({
+  total_follower_count,
+  profile_url,
+}: {
+  total_follower_count: number;
+  profile_url: string;
+}) => {
   const dateRange = useAnalyticsDateRange();
   const [data, setData] = React.useState<AudienceDataByDate | null>(null);
   const startTime = lightFormat(dateRange.from, "yyyy-MM-dd");
   const endTime = lightFormat(dateRange.to, "yyyy-MM-dd");
-
   const hasContent = total_follower_count > 0;
 
   const activeRequest = React.useRef<AbortController | null>(null);
@@ -37,21 +40,20 @@ const AudiencePage = ({ total_follower_count }: { total_follower_count: number }
 
       try {
         if (activeRequest.current) activeRequest.current.abort();
-        setData(null);
-        const request = fetchAudienceDataByDate({ startTime, endTime });
-        activeRequest.current = request.abort;
-        setData(await request.response);
+        const req = fetchAudienceDataByDate({ startTime, endTime });
+        activeRequest.current = req.abort;
+        setData(await req.response);
         activeRequest.current = null;
       } catch (e) {
         if (e instanceof AbortError) return;
         showAlert("Sorry, something went wrong. Please try again.", "error");
       }
     };
-    void loadData();
-  }, [startTime, endTime]);
+    loadData();
+  }, [startTime, endTime, hasContent]);
 
   return (
-    <AnalyticsLayout
+    <InertiaAnalyticsLayout
       selectedTab="following"
       actions={
         hasContent ? (
@@ -96,14 +98,19 @@ const AudiencePage = ({ total_follower_count }: { total_follower_count: number }
               You don't have any followers yet. Once you do, you'll see them here, along with powerful data that can
               help you keep your growing audience engaged.
             </p>
-            <a href="/help/article/170-audience" target="_blank" rel="noreferrer">
-              Learn more
-            </a>
+            <div className="flex gap-4 items-center">
+              <NavigationButton href={profile_url} target="_blank" color="accent">
+                Share your profile <Icon name="link" />
+              </NavigationButton>
+              <NavigationButton href="https://help.gumroad.com/article/185-audience" target="_blank" rel="noreferrer">
+                Learn more
+              </NavigationButton>
+            </div>
           </Placeholder>
         </div>
       )}
-    </AnalyticsLayout>
+    </InertiaAnalyticsLayout>
   );
 };
 
-export default register({ component: AudiencePage, propParser: createCast() });
+export default AudiencePage;
