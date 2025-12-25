@@ -14,11 +14,12 @@ type Props = {
   tip: React.ReactNode | null;
   position?: Position | undefined;
   tooltipProps?: React.HTMLAttributes<HTMLSpanElement> | undefined;
+  forceWrapper?: boolean;
 } & React.HTMLAttributes<HTMLSpanElement>;
-export const WithTooltip = ({ tip, children, position = "bottom", className, tooltipProps, ...props }: Props) => {
+export const WithTooltip = ({ tip, children, position = "bottom", className, tooltipProps, forceWrapper, ...props }: Props) => {
   const id = React.useId();
 
-  if (tip == null) return children;
+  if (tip == null && !forceWrapper) return children;
 
   return (
     <span {...props} className={classNames("group/tooltip relative inline-grid", className, position)}>
