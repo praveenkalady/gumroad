@@ -1,4 +1,4 @@
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 import pickBy from "lodash/pickBy";
 import * as React from "react";
 
@@ -131,10 +131,12 @@ const Analytics = ({
   }, [start_date, end_date]);
 
   // Update URL with date params on initial load if missing
+  const pageUrl = usePage().url;
+
   React.useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(pageUrl.split('?')[1] || '');
     if (!urlParams.has('from') && !urlParams.has('to')) {
-      const url = new URL(window.location.href);
+      const url = new URL(pageUrl, typeof window !== 'undefined' ? window.location.origin : 'https://gumroad.com');
       url.searchParams.set('from', start_date);
       url.searchParams.set('to', end_date);
       router.replace({ url: url.pathname + url.search, preserveState: true, preserveScroll: true });
