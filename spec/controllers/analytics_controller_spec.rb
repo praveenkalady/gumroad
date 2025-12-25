@@ -60,35 +60,38 @@ describe AnalyticsController do
       end
     end
 
-    describe "date parameter handling" do
-      it "uses default date range when no params provided" do
-        get :index
+    describe "GET index with date params" do
+      describe "when start_time and end_time are valid" do
+        it "gets analytics stats range from start_time to end_time" do
+          start_time = "Mon Apr 8 2013 22:40:18 GMT-0700 (PDT)"
+          end_time = "Wed Apr 10 2013 22:40:18 GMT-0700 (PDT)"
+          expected_start_time = Date.parse(start_time)
+          expected_end_time = Date.parse(end_time)
+          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :referral).and_call_original
+          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :state).and_call_original
+          get :index, params: { start_time:, end_time: }
+          expect(assigns(:analytics_props)).to_not be_nil
+        end
 
-        expect(assigns(:analytics_props)).to_not be_nil
-        expect(assigns(:analytics_props)[:start_date]).to_not be_nil
-        expect(assigns(:analytics_props)[:end_date]).to_not be_nil
+        it "accepts 'from' and 'to' params" do
+          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(Date.new(2025, 11, 25), Date.new(2025, 12, 25), by: :referral).and_call_original
+          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(Date.new(2025, 11, 25), Date.new(2025, 12, 25), by: :state).and_call_original
+          get :index, params: { from: "2025-11-25", to: "2025-12-25" }
+          expect(assigns(:analytics_props)[:start_date]).to eq("2025-11-25")
+          expect(assigns(:analytics_props)[:end_date]).to eq("2025-12-25")
+        end
       end
 
-      it "accepts 'from' and 'to' params" do
-        get :index, params: { from: "2025-11-25", to: "2025-12-25" }
-
-        expect(assigns(:analytics_props)[:start_date]).to eq("2025-11-25")
-        expect(assigns(:analytics_props)[:end_date]).to eq("2025-12-25")
-      end
-
-      it "accepts 'start_time' and 'end_time' params for backward compatibility" do
-        get :index, params: { start_time: "2025-11-25", end_time: "2025-12-25" }
-
-        expect(assigns(:analytics_props)[:start_date]).to eq("2025-11-25")
-        expect(assigns(:analytics_props)[:end_date]).to eq("2025-12-25")
-      end
-
-      it "falls back to defaults when invalid date params provided" do
-        get :index, params: { from: "invalid", to: "invalid" }
-
-        expect(assigns(:analytics_props)).to_not be_nil
-        expect(assigns(:analytics_props)[:start_date]).to_not be_nil
-        expect(assigns(:analytics_props)[:end_date]).to_not be_nil
+      describe "when start_time or end_time is invalid" do
+        it "gets analytics stats range from 30 days ago to today" do
+          now = DateTime.current
+          expected_start_time = now.to_date - 30.days
+          expected_end_time = now.to_date
+          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :referral).and_call_original
+          expect_any_instance_of(CreatorAnalytics::CachingProxy).to receive(:data_for_dates).with(expected_start_time, expected_end_time, by: :state).and_call_original
+          get :index
+          expect(assigns(:analytics_props)).to_not be_nil
+        end
       end
     end
 

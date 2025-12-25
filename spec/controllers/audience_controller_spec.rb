@@ -25,37 +25,39 @@ describe AudienceController do
       expect(assigns(:total_follower_count)).to eq 1
     end
 
-    it "uses default date range when no params provided" do
-      get :index
-
-      end_date = DateTime.current.to_date
-      start_date = end_date - 30.days
-
-      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
-    end
-
-    it "accepts 'from' and 'to' params" do
-      get :index, params: { from: "2025-11-25", to: "2025-12-25" }
-
-      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
-    end
-
-    it "accepts 'start_time' and 'end_time' params for backward compatibility" do
-      get :index, params: { start_time: "2025-11-25", end_time: "2025-12-25" }
-
-      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
-    end
-
-    it "falls back to defaults when invalid date params provided" do
-      get :index, params: { from: "invalid", to: "invalid" }
-
-      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
-    end
-
     it "sets the last viewed dashboard cookie" do
       get :index
 
       expect(response.cookies["last_viewed_dashboard"]).to eq "audience"
+    end
+  end
+
+  describe "GET index with date params" do
+    it "gets audience data range from start_time to end_time" do
+      start_time = "Mon Apr 8 2013 22:40:18 GMT-0700 (PDT)"
+      end_time = "Wed Apr 10 2013 22:40:18 GMT-0700 (PDT)"
+      expected_start_time = Date.parse(start_time)
+      expected_end_time = Date.parse(end_time)
+      expect_any_instance_of(CreatorAnalytics::Following).to receive(:by_date).with(start_date: expected_start_time, end_date: expected_end_time).and_call_original
+      get :index, params: { start_time:, end_time: }
+      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
+    end
+
+    it "accepts 'from' and 'to' params" do
+      expect_any_instance_of(CreatorAnalytics::Following).to receive(:by_date).with(start_date: Date.new(2025, 11, 25), end_date: Date.new(2025, 12, 25)).and_call_original
+      get :index, params: { from: "2025-11-25", to: "2025-12-25" }
+      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
+    end
+
+    describe "when start_time or end_time is invalid" do
+      it "gets audience data range from 30 days ago to today" do
+        now = DateTime.current
+        expected_start_time = now.to_date - 30.days
+        expected_end_time = now.to_date
+        expect_any_instance_of(CreatorAnalytics::Following).to receive(:by_date).with(start_date: expected_start_time, end_date: expected_end_time).and_call_original
+        get :index
+        expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
+      end
     end
   end
 
