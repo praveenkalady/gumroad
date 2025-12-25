@@ -96,7 +96,7 @@ export const AudiencePage = ({
               You don't have any followers yet. Once you do, you'll see them here, along with powerful data that can
               help you keep your growing audience engaged.
             </p>
-            <a href="/help/article/185-audience" target="_blank" rel="noreferrer">
+            <a href="/help/article/170-audience" target="_blank" rel="noreferrer">
               Learn more
             </a>
           </Placeholder>
