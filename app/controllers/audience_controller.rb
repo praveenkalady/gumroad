@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class AudienceController < Sellers::BaseController
-  before_action :set_time_range, only: %i[data_by_date]
 
   after_action :set_dashboard_preference_to_audience, only: :index
   before_action :check_payment_details, only: :index
@@ -12,7 +11,38 @@ class AudienceController < Sellers::BaseController
 
     @total_follower_count = current_seller.audience_members.where(follower: true).count
 
-    render inertia: "Audience/Index", props: { total_follower_count: @total_follower_count }
+    # Fetch audience data for the requested or default date range
+    start_date = nil
+    end_date = nil
+
+    start_param = params[:from].presence || params[:start_time].presence
+    end_param = params[:to].presence || params[:end_time].presence
+
+    if start_param && end_param
+      begin
+        start_date = Date.parse(start_param.to_s)
+        end_date = Date.parse(end_param.to_s)
+      rescue ArgumentError, TypeError => e
+        Rails.logger.warn("Invalid date params: from/start_time=#{start_param}, to/end_time=#{end_param}, error=#{e.message}")
+        start_date = nil
+        end_date = nil
+      end
+    end
+
+    # Use defaults if parsing failed or params not present
+    if start_date.nil? || end_date.nil?
+      end_date = DateTime.current.to_date
+      start_date = end_date - 30.days
+    end
+
+    @audience_data = CreatorAnalytics::Following.new(current_seller).by_date(start_date: start_date, end_date: end_date)
+
+    render inertia: "Audience/Index", props: {
+      total_follower_count: @total_follower_count,
+      audience_data: @audience_data,
+      start_date: start_date.to_s,
+      end_date: end_date.to_s
+    }
   end
 
   def export
@@ -27,28 +57,7 @@ class AudienceController < Sellers::BaseController
     head :ok
   end
 
-  def data_by_date
-    authorize :audience, :index?
-
-    data = CreatorAnalytics::Following.new(current_seller).by_date(start_date: @start_date.to_date, end_date: @end_date.to_date)
-
-    render json: data
-  end
-
   protected
-    def set_time_range
-      begin
-        end_time = DateTime.parse(params[:end_time])
-        start_date = DateTime.parse(params[:start_time])
-      rescue StandardError
-        end_time = DateTime.current
-        start_date = end_time.ago(29.days)
-      end
-      @start_date = start_date
-      @end_date = end_time
-      @timezone_offset = end_time.zone
-    end
-
     def set_title
       @title = "Analytics"
     end

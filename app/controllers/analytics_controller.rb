@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class AnalyticsController < Sellers::BaseController
-  before_action :set_time_range, only: %i[data_by_date data_by_state data_by_referral]
 
   after_action :set_dashboard_preference_to_sales, only: :index
   before_action :check_payment_details, only: :index
@@ -11,63 +10,56 @@ class AnalyticsController < Sellers::BaseController
   def index
     authorize :analytics
 
-    @analytics_props = AnalyticsPresenter.new(seller: current_seller).page_props
+    # Get date range from params or use defaults
+    start_date = nil
+    end_date = nil
+
+    start_param = params[:from].presence || params[:start_time].presence
+    end_param = params[:to].presence || params[:end_time].presence
+
+    if start_param && end_param
+      begin
+        start_date = Date.parse(start_param.to_s)
+        end_date = Date.parse(end_param.to_s)
+      rescue ArgumentError, TypeError => e
+        Rails.logger.warn("Invalid date params: from/start_time=#{start_param}, to/end_time=#{end_param}, error=#{e.message}")
+        start_date = nil
+        end_date = nil
+      end
+    end
+
+    # Use defaults if parsing failed or params not present
+    if start_date.nil? || end_date.nil?
+      end_date = DateTime.current.to_date
+      start_date = end_date - 30.days
+    end
+
+
+    # Fetch analytics data
+    if Feature.active?(:use_creator_analytics_web_in_controller)
+      analytics_web = CreatorAnalytics::Web.new(user: current_seller, dates: (start_date..end_date).to_a)
+      by_referral_data = analytics_web.by_referral
+      by_state_data = analytics_web.by_state
+    else
+      caching_proxy = CreatorAnalytics::CachingProxy.new(current_seller)
+      by_referral_data = caching_proxy.data_for_dates(start_date, end_date, by: :referral)
+      by_state_data = caching_proxy.data_for_dates(start_date, end_date, by: :state)
+    end
+
+    @analytics_props = AnalyticsPresenter.new(seller: current_seller).page_props.merge(
+      by_referral_data: by_referral_data,
+      by_state_data: by_state_data,
+      start_date: start_date.to_s,
+      end_date: end_date.to_s
+    )
+
     LargeSeller.create_if_warranted(current_seller)
 
     render inertia: "Analytics/Index",
            props: { analytics_props: @analytics_props }
   end
 
-  def data_by_date
-    authorize :analytics, :index?
-
-    if Feature.active?(:use_creator_analytics_web_in_controller)
-      data = creator_analytics_web.by_date
-    else
-      data = CreatorAnalytics::CachingProxy.new(current_seller).data_for_dates(@start_date, @end_date, by: :date)
-    end
-    render json: data
-  end
-
-  def data_by_state
-    authorize :analytics, :index?
-
-    if Feature.active?(:use_creator_analytics_web_in_controller)
-      data = creator_analytics_web.by_state
-    else
-      data = CreatorAnalytics::CachingProxy.new(current_seller).data_for_dates(@start_date, @end_date, by: :state)
-    end
-    render json: data
-  end
-
-  def data_by_referral
-    authorize :analytics, :index?
-
-    if Feature.active?(:use_creator_analytics_web_in_controller)
-      data = creator_analytics_web.by_referral
-    else
-      data = CreatorAnalytics::CachingProxy.new(current_seller).data_for_dates(@start_date, @end_date, by: :referral)
-    end
-    render json: data
-  end
-
   protected
-    def set_time_range
-      begin
-        end_time = DateTime.parse(strip_timestamp_location(params[:end_time]))
-        start_date = Date.parse(strip_timestamp_location(params[:start_time]))
-      rescue StandardError
-        end_time = DateTime.current
-        start_date = end_time.to_date.ago(29.days).to_date
-      end
-      @start_date = start_date
-      @end_date = end_time.to_date
-    end
-
-    def creator_analytics_web
-      CreatorAnalytics::Web.new(user: current_seller, dates: (@start_date .. @end_date).to_a)
-    end
-
     def set_title
       @title = "Analytics"
     end

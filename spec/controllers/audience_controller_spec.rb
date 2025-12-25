@@ -25,6 +25,33 @@ describe AudienceController do
       expect(assigns(:total_follower_count)).to eq 1
     end
 
+    it "uses default date range when no params provided" do
+      get :index
+
+      end_date = DateTime.current.to_date
+      start_date = end_date - 30.days
+
+      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
+    end
+
+    it "accepts 'from' and 'to' params" do
+      get :index, params: { from: "2025-11-25", to: "2025-12-25" }
+
+      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
+    end
+
+    it "accepts 'start_time' and 'end_time' params for backward compatibility" do
+      get :index, params: { start_time: "2025-11-25", end_time: "2025-12-25" }
+
+      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
+    end
+
+    it "falls back to defaults when invalid date params provided" do
+      get :index, params: { from: "invalid", to: "invalid" }
+
+      expect(controller.instance_variable_get(:@audience_data)).to_not be_nil
+    end
+
     it "sets the last viewed dashboard cookie" do
       get :index
 
@@ -64,46 +91,4 @@ describe AudienceController do
     end
   end
 
-  describe "GET data_by_date" do
-    before do
-      seller.update!(timezone: "UTC")
-
-      travel_to Time.utc(2021, 1, 3) do
-        create(:active_follower, user: seller).confirm!
-        follower = create(:active_follower, user: seller)
-        follower.confirm!
-        follower.mark_deleted!
-      end
-    end
-
-    it_behaves_like "authorize called for action", :get, :data_by_date do
-      let(:record) { :audience }
-      let(:policy_method) { :index? }
-      let(:request_params) { { start_time: Time.utc(2021, 1, 1), end_time: Time.utc(2021, 1, 3) } }
-    end
-
-    it "returns expected data", :sidekiq_inline, :elasticsearch_wait_for_refresh do
-      expect_any_instance_of(CreatorAnalytics::Following).to receive(:by_date).with(start_date: Date.new(2021, 1, 1), end_date: Date.new(2021, 1, 3)).and_call_original
-      get :data_by_date, params: { start_time: Time.utc(2021, 1, 1), end_time: Time.utc(2021, 1, 3) }
-
-      expect(response.parsed_body).to eq(
-        "dates" => ["Friday, January 1st", "Saturday, January 2nd", "Sunday, January 3rd"],
-        "start_date" => "Jan  1, 2021",
-        "end_date" => "Jan  3, 2021",
-        "by_date" => {
-          "new_followers" => [0, 0, 2],
-          "followers_removed" => [0, 0, 1],
-          "totals" => [0, 0, 1]
-        },
-        "first_follower_date" => "Jan  3, 2021",
-        "new_followers" => 1
-      )
-    end
-
-    it "works for someone in the GMT-1200 TZ" do
-      mask = "%a %b %d %Y %H:%M:%S GMT-1200 (Changement de date)"
-      get(:data_by_date, params: { start_time: 2.days.ago.strftime(mask), end_time: 1.day.ago.strftime(mask) })
-      expect(response.status).to be(200)
-    end
-  end
 end

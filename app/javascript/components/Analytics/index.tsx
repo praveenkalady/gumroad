@@ -1,15 +1,12 @@
-import { lightFormat } from "date-fns";
+import { router } from "@inertiajs/react";
 import pickBy from "lodash/pickBy";
 import * as React from "react";
 
 import {
   AnalyticsDataByReferral,
   AnalyticsDataByState,
-  fetchAnalyticsDataByReferral,
-  fetchAnalyticsDataByState,
 } from "$app/data/analytics";
 import { assertDefined } from "$app/utils/assert";
-import { AbortError } from "$app/utils/request";
 
 import { InertiaAnalyticsLayout } from "$app/components/Analytics/InertiaAnalyticsLayout";
 import { LocationsTable } from "$app/components/Analytics/LocationsTable";
@@ -17,10 +14,7 @@ import { ProductsPopover } from "$app/components/Analytics/ProductsPopover";
 import { ReferrersTable } from "$app/components/Analytics/ReferrersTable";
 import { SalesChart } from "$app/components/Analytics/SalesChart";
 import { SalesQuickStats } from "$app/components/Analytics/SalesQuickStats";
-import { useAnalyticsDateRange } from "$app/components/Analytics/useAnalyticsDateRange";
 import { DateRangePicker } from "$app/components/DateRangePicker";
-import { LoadingSpinner } from "$app/components/LoadingSpinner";
-import { showAlert } from "$app/components/server-components/Alert";
 import Placeholder from "$app/components/ui/Placeholder";
 
 import placeholder from "$assets/images/placeholders/sales.png";
@@ -98,50 +92,107 @@ export type AnalyticsProps = {
   products: Product[];
   country_codes: Record<string, string>;
   state_names: Record<string, string>;
+  by_referral_data: AnalyticsDataByReferral;
+  by_state_data: AnalyticsDataByState;
+  start_date: string;
+  end_date: string;
 };
 
-const Analytics = ({ products: initialProducts, country_codes, state_names }: AnalyticsProps) => {
+
+const Analytics = ({
+  products: initialProducts,
+  country_codes,
+  state_names,
+  by_referral_data,
+  by_state_data,
+  start_date,
+  end_date
+}: AnalyticsProps) => {
   const [products, setProducts] = React.useState(
     initialProducts.map((product) => ({ ...product, selected: product.alive })),
   );
   const [aggregateBy, setAggregateBy] = React.useState<"daily" | "monthly">("daily");
-  const dateRange = useAnalyticsDateRange();
-  const [data, setData] = React.useState<{
-    byReferral: AnalyticsDataByReferral;
-    byState: AnalyticsDataByState;
-  } | null>(null);
-  const startTime = lightFormat(dateRange.from, "yyyy-MM-dd");
-  const endTime = lightFormat(dateRange.to, "yyyy-MM-dd");
 
   const hasContent = products.length > 0;
 
-  const activeRequests = React.useRef<AbortController[] | null>(null);
-  React.useEffect(() => {
-    const loadData = async () => {
-      if (!hasContent) return;
+  // Use local state for the date picker
+  const [from, setFrom] = React.useState(new Date(start_date));
+  const [to, setTo] = React.useState(new Date(end_date));
 
-      try {
-        if (activeRequests.current) activeRequests.current.forEach((request) => request.abort());
-        setData(null);
-        const byStateRequest = fetchAnalyticsDataByState({ startTime, endTime });
-        const byReferralRequest = fetchAnalyticsDataByReferral({ startTime, endTime });
-        activeRequests.current = [byStateRequest.abort, byReferralRequest.abort];
-        const [byState, byReferral] = await Promise.all([byStateRequest.response, byReferralRequest.response]);
-        setData({ byState, byReferral });
-        activeRequests.current = null;
-      } catch (e) {
-        if (e instanceof AbortError) return;
-        showAlert("Sorry, something went wrong. Please try again.", "error");
-      }
-    };
-    void loadData();
-  }, [startTime, endTime]);
+  // Use refs to track the latest dates to avoid stale closures
+  const latestDatesRef = React.useRef({ from, to });
+  const reloadTimeoutRef = React.useRef<number | null>(null);
+
+  // Update local state when props change (from server)
+  React.useEffect(() => {
+    setFrom(new Date(start_date));
+    setTo(new Date(end_date));
+    latestDatesRef.current = { from: new Date(start_date), to: new Date(end_date) };
+  }, [start_date, end_date]);
+
+  // Update URL with date params on initial load if missing
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('from') && !urlParams.has('to')) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('from', start_date);
+      url.searchParams.set('to', end_date);
+      router.replace({ url: url.pathname + url.search, preserveState: true, preserveScroll: true });
+    }
+  }, []); // Only run once on mount
+
+  const handleDateChange = () => {
+    const { from: currentFrom, to: currentTo } = latestDatesRef.current;
+
+    // Validate dates before reloading
+    if (!currentFrom || !currentTo || isNaN(currentFrom.getTime()) || isNaN(currentTo.getTime())) {
+      return; // Don't reload with invalid dates
+    }
+
+    const fromStr = currentFrom.toISOString().split('T')[0];
+    const toStr = currentTo.toISOString().split('T')[0];
+
+    // Additional validation: ensure date strings are valid (YYYY-MM-DD format)
+    if (!fromStr || !toStr || fromStr.length !== 10 || toStr.length !== 10) {
+      return; // Don't reload with malformed date strings
+    }
+
+    // Only reload if dates actually changed
+    if (fromStr !== start_date || toStr !== end_date) {
+      router.reload({
+        data: {
+          from: fromStr,
+          to: toStr,
+        },
+      });
+    }
+  };
+
+  const handleFromChange = (newFrom: Date) => {
+    setFrom(newFrom);
+    latestDatesRef.current.from = newFrom;
+
+    if (reloadTimeoutRef.current) {
+      clearTimeout(reloadTimeoutRef.current);
+    }
+    reloadTimeoutRef.current = setTimeout(handleDateChange, 300) as unknown as number;
+  };
+
+  const handleToChange = (newTo: Date) => {
+    setTo(newTo);
+    latestDatesRef.current.to = newTo;
+
+    if (reloadTimeoutRef.current) {
+      clearTimeout(reloadTimeoutRef.current);
+    }
+    reloadTimeoutRef.current = setTimeout(handleDateChange, 300) as unknown as number;
+  };
 
   const selectedProducts = products.filter((product) => product.selected).map((product) => product.unique_permalink);
 
   const mainData = React.useMemo(
-    () => (data?.byReferral ? formatData(data.byReferral, selectedProducts) : null),
-    [data?.byReferral, products],
+    () => (by_referral_data ? formatData(by_referral_data, selectedProducts) : null),
+    [by_referral_data, products],
   );
 
   return (
@@ -159,7 +210,12 @@ const Analytics = ({ products: initialProducts, country_codes, state_names }: An
               <option value="monthly">Monthly</option>
             </select>
             <ProductsPopover products={products} setProducts={setProducts} />
-            <DateRangePicker {...dateRange} />
+            <DateRangePicker
+              from={from}
+              to={to}
+              setFrom={handleFromChange}
+              setTo={handleToChange}
+            />
           </>
         ) : null
       }
@@ -177,31 +233,15 @@ const Analytics = ({ products: initialProducts, country_codes, state_names }: An
               />
               <ReferrersTable data={mainData.referrerTotal} />
             </>
-          ) : (
-            <>
-              <div className="input">
-                <LoadingSpinner />
-                Loading charts...
-              </div>
-              <div className="input">
-                <LoadingSpinner />
-                Loading referrers...
-              </div>
-            </>
-          )}
-          {data?.byState ? (
+          ) : null}
+          {by_state_data ? (
             <LocationsTable
-              data={data.byState}
+              data={by_state_data}
               selectedProducts={selectedProducts}
               countryCodes={country_codes}
               stateNames={state_names}
             />
-          ) : (
-            <div className="input">
-              <LoadingSpinner />
-              Loading locations...
-            </div>
-          )}
+          ) : null}
         </div>
       ) : (
         <div className="p-4 md:p-8">
