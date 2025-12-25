@@ -123,14 +123,12 @@ const Analytics = ({
   const latestDatesRef = React.useRef({ from, to });
   const reloadTimeoutRef = React.useRef<number | null>(null);
 
-  // Update local state when props change (from server)
   React.useEffect(() => {
     setFrom(new Date(start_date));
     setTo(new Date(end_date));
     latestDatesRef.current = { from: new Date(start_date), to: new Date(end_date) };
   }, [start_date, end_date]);
 
-  // Update URL with date params on initial load if missing
   const pageUrl = usePage().url;
 
   React.useEffect(() => {
@@ -141,23 +139,12 @@ const Analytics = ({
       url.searchParams.set('to', end_date);
       router.replace({ url: url.pathname + url.search, preserveState: true, preserveScroll: true });
     }
-  }, []); // Only run once on mount
+  }, []);
 
   const handleDateChange = () => {
     const { from: currentFrom, to: currentTo } = latestDatesRef.current;
-
-    // Validate dates before reloading
-    if (!currentFrom || !currentTo || isNaN(currentFrom.getTime()) || isNaN(currentTo.getTime())) {
-      return; // Don't reload with invalid dates
-    }
-
     const fromStr = currentFrom.toISOString().split('T')[0];
     const toStr = currentTo.toISOString().split('T')[0];
-
-    // Additional validation: ensure date strings are valid (YYYY-MM-DD format)
-    if (!fromStr || !toStr || fromStr.length !== 10 || toStr.length !== 10) {
-      return; // Don't reload with malformed date strings
-    }
 
     // Only reload if dates actually changed
     if (fromStr !== start_date || toStr !== end_date) {
