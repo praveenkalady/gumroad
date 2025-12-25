@@ -27,8 +27,10 @@ export const InertiaAnalyticsLayout = ({
               Following
             </Link>
           </Tab>
-          <Tab href={Routes.sales_dashboard_path()} isSelected={selectedTab === "sales"}>
-            Sales
+          <Tab isSelected={selectedTab === "sales"} asChild>
+            <Link href={Routes.sales_dashboard_path()} className="no-underline">
+              Sales
+            </Link>
           </Tab>
           {user.policies.utm_link.index ? (
             <Tab href={Routes.utm_links_dashboard_path()} isSelected={selectedTab === "utm_links"}>
