@@ -1,4 +1,3 @@
-import { router, usePage } from "@inertiajs/react";
 import pickBy from "lodash/pickBy";
 import * as React from "react";
 
@@ -6,6 +5,7 @@ import {
   AnalyticsDataByReferral,
   AnalyticsDataByState,
 } from "$app/data/analytics";
+import { useDateRangeFilter } from "$app/hooks/useDateRangeFilter";
 import { assertDefined } from "$app/utils/assert";
 
 import { InertiaAnalyticsLayout } from "$app/components/Analytics/InertiaAnalyticsLayout";
@@ -116,66 +116,7 @@ const Analytics = ({
   const hasContent = products.length > 0;
 
   // Use local state for the date picker
-  const [from, setFrom] = React.useState(new Date(start_date));
-  const [to, setTo] = React.useState(new Date(end_date));
-
-  // Use refs to track the latest dates to avoid stale closures
-  const latestDatesRef = React.useRef({ from, to });
-  const reloadTimeoutRef = React.useRef<number | null>(null);
-
-  React.useEffect(() => {
-    setFrom(new Date(start_date));
-    setTo(new Date(end_date));
-    latestDatesRef.current = { from: new Date(start_date), to: new Date(end_date) };
-  }, [start_date, end_date]);
-
-  const pageUrl = usePage().url;
-
-  React.useEffect(() => {
-    const urlParams = new URLSearchParams(pageUrl.split('?')[1] || '');
-    if (!urlParams.has('from') && !urlParams.has('to')) {
-      const url = new URL(pageUrl, typeof window !== 'undefined' ? window.location.origin : 'https://gumroad.com');
-      url.searchParams.set('from', start_date);
-      url.searchParams.set('to', end_date);
-      router.replace({ url: url.pathname + url.search, preserveState: true, preserveScroll: true });
-    }
-  }, []);
-
-  const handleDateChange = () => {
-    const { from: currentFrom, to: currentTo } = latestDatesRef.current;
-    const fromStr = currentFrom.toISOString().split('T')[0];
-    const toStr = currentTo.toISOString().split('T')[0];
-
-    // Only reload if dates actually changed
-    if (fromStr !== start_date || toStr !== end_date) {
-      router.reload({
-        data: {
-          from: fromStr,
-          to: toStr,
-        },
-      });
-    }
-  };
-
-  const handleFromChange = (newFrom: Date) => {
-    setFrom(newFrom);
-    latestDatesRef.current.from = newFrom;
-
-    if (reloadTimeoutRef.current) {
-      clearTimeout(reloadTimeoutRef.current);
-    }
-    reloadTimeoutRef.current = setTimeout(handleDateChange, 300) as unknown as number;
-  };
-
-  const handleToChange = (newTo: Date) => {
-    setTo(newTo);
-    latestDatesRef.current.to = newTo;
-
-    if (reloadTimeoutRef.current) {
-      clearTimeout(reloadTimeoutRef.current);
-    }
-    reloadTimeoutRef.current = setTimeout(handleDateChange, 300) as unknown as number;
-  };
+  const { from, to, handleFromChange, handleToChange } = useDateRangeFilter(start_date, end_date);
 
   const selectedProducts = products.filter((product) => product.selected).map((product) => product.unique_permalink);
 
@@ -199,12 +140,7 @@ const Analytics = ({
               <option value="monthly">Monthly</option>
             </select>
             <ProductsPopover products={products} setProducts={setProducts} />
-            <DateRangePicker
-              from={from}
-              to={to}
-              setFrom={handleFromChange}
-              setTo={handleToChange}
-            />
+            <DateRangePicker from={from} to={to} setFrom={handleFromChange} setTo={handleToChange} />
           </>
         ) : null
       }

@@ -1,7 +1,8 @@
-import { router, usePage } from "@inertiajs/react";
+import { usePage } from "@inertiajs/react";
 import React from "react";
 
 import { AudienceDataByDate } from "$app/data/audience";
+import { useDateRangeFilter } from "$app/hooks/useDateRangeFilter";
 
 import { InertiaAnalyticsLayout } from "$app/components/Analytics/InertiaAnalyticsLayout";
 import { AudienceChart } from "$app/components/Audience/AudienceChart";
@@ -28,70 +29,7 @@ const Index = () => {
   const { total_follower_count, audience_data, start_date, end_date } = usePage<AudienceIndexProps>().props;
   const hasContent = total_follower_count > 0;
 
-  const [from, setFrom] = React.useState(new Date(start_date));
-  const [to, setTo] = React.useState(new Date(end_date));
-
-  // Use refs to track the latest dates to avoid stale closures
-  const latestDatesRef = React.useRef({ from, to });
-  const reloadTimeoutRef = React.useRef<number | null>(null);
-
-  React.useEffect(() => {
-    setFrom(new Date(start_date));
-    setTo(new Date(end_date));
-    latestDatesRef.current = { from: new Date(start_date), to: new Date(end_date) };
-  }, [start_date, end_date]);
-
-  const pageUrl = usePage().url;
-
-  React.useEffect(() => {
-    const urlParams = new URLSearchParams(pageUrl.split('?')[1] || '');
-    if (!urlParams.has('from') && !urlParams.has('to')) {
-      const url = new URL(pageUrl, typeof window !== 'undefined' ? window.location.origin : 'https://gumroad.com');
-      url.searchParams.set('from', start_date);
-      url.searchParams.set('to', end_date);
-      router.replace({ url: url.pathname + url.search, preserveState: true, preserveScroll: true });
-    }
-  }, []);
-
-  const handleDateChange = () => {
-    const { from: currentFrom, to: currentTo } = latestDatesRef.current;
-    if (!currentFrom || !currentTo || isNaN(currentFrom.getTime()) || isNaN(currentTo.getTime())) {
-      return;
-    }
-    const fromStr = currentFrom.toISOString().split('T')[0];
-    const toStr = currentTo.toISOString().split('T')[0];
-    if (!fromStr || !toStr || fromStr.length !== 10 || toStr.length !== 10) {
-      return;
-    }
-    if (fromStr !== start_date || toStr !== end_date) {
-      router.reload({
-        data: {
-          from: fromStr,
-          to: toStr,
-        },
-      });
-    }
-  };
-
-  const handleFromChange = (newFrom: Date) => {
-    setFrom(newFrom);
-    latestDatesRef.current.from = newFrom;
-
-    if (reloadTimeoutRef.current) {
-      clearTimeout(reloadTimeoutRef.current);
-    }
-    reloadTimeoutRef.current = setTimeout(handleDateChange, 300) as unknown as number;
-  };
-
-  const handleToChange = (newTo: Date) => {
-    setTo(newTo);
-    latestDatesRef.current.to = newTo;
-
-    if (reloadTimeoutRef.current) {
-      clearTimeout(reloadTimeoutRef.current);
-    }
-    reloadTimeoutRef.current = setTimeout(handleDateChange, 300) as unknown as number;
-  };
+  const { from, to, handleFromChange, handleToChange } = useDateRangeFilter(start_date, end_date);
 
   return (
     <InertiaAnalyticsLayout
@@ -111,12 +49,7 @@ const Index = () => {
             >
               {(close) => <ExportSubscribersPopover closePopover={close} />}
             </Popover>
-            <DateRangePicker
-              from={from}
-              to={to}
-              setFrom={handleFromChange}
-              setTo={handleToChange}
-            />
+            <DateRangePicker from={from} to={to} setFrom={handleFromChange} setTo={handleToChange} />
           </>
         ) : null
       }
