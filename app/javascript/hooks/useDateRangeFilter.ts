@@ -1,8 +1,8 @@
-import { useForm, usePage } from "@inertiajs/react";
+import { router, useForm, usePage } from "@inertiajs/react";
 import * as React from "react";
 
 export const useDateRangeFilter = (initialStart: string, initialEnd: string) => {
-  const { data, setData, get, transform } = useForm({
+  const { data, setData } = useForm({
     from: new Date(initialStart),
     to: new Date(initialEnd),
   });
@@ -10,13 +10,7 @@ export const useDateRangeFilter = (initialStart: string, initialEnd: string) => 
   const pageUrl = usePage().url;
   const isValidDate = (d: any) => d instanceof Date && !isNaN(d.getTime());
 
-  React.useEffect(() => {
-    transform((data) => ({
-      from: isValidDate(data.from) ? data.from.toISOString().split("T")[0] : "",
-      to: isValidDate(data.to) ? data.to.toISOString().split("T")[0] : "",
-    }));
-  }, []);
-
+  // Sync state with props if they change (e.g. invalid date corrected by backend, or navigation)
   React.useEffect(() => {
     setData({
       from: new Date(initialStart),
@@ -24,15 +18,20 @@ export const useDateRangeFilter = (initialStart: string, initialEnd: string) => 
     });
   }, [initialStart, initialEnd]);
 
+  // Auto-Submit on change (Inertia handles cancellation)
   React.useEffect(() => {
     const fromStr = isValidDate(data.from) ? data.from.toISOString().split("T")[0] : "";
     const toStr = isValidDate(data.to) ? data.to.toISOString().split("T")[0] : "";
 
+    // Skip if invalid or unchanged from initial props
     if (!fromStr || !toStr || (fromStr === initialStart && toStr === initialEnd)) {
       return;
     }
 
-    get(pageUrl.split("?")[0], {
+    router.get(pageUrl.split("?")[0], {
+      from: fromStr,
+      to: toStr,
+    }, {
       preserveState: true,
       preserveScroll: true,
     });
