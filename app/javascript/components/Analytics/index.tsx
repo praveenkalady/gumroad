@@ -116,7 +116,9 @@ const Analytics = ({
   const hasContent = products.length > 0;
 
   // Use local state for the date picker
-  const { from, to, handleFromChange, handleToChange } = useDateRangeFilter(start_date, end_date);
+  const { from, to, handleFromChange, handleToChange } = useDateRangeFilter(start_date, end_date, {
+    only: ["analytics_props"],
+  });
 
   const selectedProducts = products.filter((product) => product.selected).map((product) => product.unique_permalink);
 

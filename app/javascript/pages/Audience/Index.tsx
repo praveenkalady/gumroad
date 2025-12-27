@@ -29,7 +29,9 @@ const Index = () => {
   const { total_follower_count, audience_data, start_date, end_date } = usePage<AudienceIndexProps>().props;
   const hasContent = total_follower_count > 0;
 
-  const { from, to, handleFromChange, handleToChange } = useDateRangeFilter(start_date, end_date);
+  const { from, to, handleFromChange, handleToChange } = useDateRangeFilter(start_date, end_date, {
+    only: ["audience_data", "start_date", "end_date", "total_follower_count"],
+  });
 
   return (
     <InertiaAnalyticsLayout

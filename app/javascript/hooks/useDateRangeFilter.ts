@@ -1,7 +1,7 @@
 import { router, useForm, usePage } from "@inertiajs/react";
 import * as React from "react";
 
-export const useDateRangeFilter = (initialStart: string, initialEnd: string) => {
+export const useDateRangeFilter = (initialStart: string, initialEnd: string, options?: { only?: string[] }) => {
   const { data, setData } = useForm({
     from: new Date(initialStart),
     to: new Date(initialEnd),
@@ -34,6 +34,7 @@ export const useDateRangeFilter = (initialStart: string, initialEnd: string) => 
     }, {
       preserveState: true,
       preserveScroll: true,
+      ...(options?.only ? { only: options.only } : {}),
     });
   }, [data.from, data.to]);
 
