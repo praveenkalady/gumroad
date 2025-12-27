@@ -76,6 +76,7 @@ describe AnalyticsController do
       before :each do
         allow(controller.logged_in_user).to receive(:visible).and_return([Link.new])
         allow(controller.logged_in_user).to receive(:successful_or_preorder_authorization_successful).and_return([Purchase.new])
+        create(:merchant_account, user: nil)
         product = create(:product, user: seller)
         create(:purchase, link: product, price_cents: 100, purchase_state: "successful")
       end
